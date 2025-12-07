@@ -5,79 +5,37 @@ description: "Start building web apps in less than 5 mins"
 
 ## Get started in three steps
 
-This quickstart guide assumes that you have Rust and Cargo already setup and configured on your machine. [Look at this guide](https://rust-lang.org/learn/get-started/) if you want to know how to setup Rust and Cargo on your machine.
+This quickstart guide assumes that you already have Rust and Cargo up and running on your machine.
+
+<Note>
+  [Look at this guide ](https://rust-lang.org/learn/get-started/) if you want to know how to setup Rust and Cargo on your machine.
+</Note>
 
 ### Step 1: Install the kit-cli
 
 Install the kit-cli on your machine via Cargo using the following command:
 
-`cargo install kit-cli`
+```bash Terminal
+cargo install kit-cli
+```
 
-<AccordionGroup>
-  <Accordion title="Clone your docs locally" icon="copy">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+### Step 2:  Create your project using kit-cli
 
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion title="Start the preview server" icon="rectangle-terminal">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+Run the following command to create your project. Replace the `todo-app` with your project name
 
-    <Tip>
-      Your preview updates automatically as you edit files.
-    </Tip>
-  </Accordion>
-</AccordionGroup>
+```bash Terminal
+kit new todo-app
+```
 
-### Step 2: Deploy your changes
+The ineractive shell will ask some project specific questions like Project Name, Author etc. Answer all the questions and then the cli will generate the project files for you
 
-<AccordionGroup>
-  <Accordion title="Install our GitHub app" icon="github">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+### Step 3: Start the web server
 
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-  </Accordion>
-  <Accordion title="Update your site name and colors" icon="palette">
-    For a first change, let's update the name and colors of your docs site.
+Now that you have the project setup you need to go to the project directory and then run kit serve command:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+```bash Terminal
+cd todo-app
+kit serve
+```
 
-    <Tip>
-      Try changing the primary color to see an immediate difference!
-    </Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion title="Publish your docs" icon="rocket">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-  <Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-    Learn MDX syntax and start writing your documentation.
-  </Card>
-  <Card title="Customize style" icon="palette" href="/essentials/settings">
-    Make your docs match your brand perfectly.
-  </Card>
-  <Card title="Add code examples" icon="square-code" href="/essentials/code">
-    Include syntax-highlighted code blocks.
-  </Card>
-  <Card title="API documentation" icon="code" href="/api-reference/introduction">
-    Auto-generate API docs from OpenAPI specs.
-  </Card>
-</CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+This will start the web server and in the terminal you will see the URL on which your web server is running. Go to the url and you will find your app up and running!!
