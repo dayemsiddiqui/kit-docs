@@ -25,6 +25,7 @@
             "group": "Core concepts",
             "pages": [
               "core/routing",
+              "core/responses",
               "core/middleware"
             ]
           },
