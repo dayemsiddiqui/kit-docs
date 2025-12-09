@@ -61,6 +61,21 @@
         ]
       },
       {
+        "tab": "Database",
+        "groups": [
+          {
+            "group": "Database",
+            "pages": [
+              "database/overview",
+              "database/configuration",
+              "database/models",
+              "database/queries",
+              "database/migrations"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "CLI",
         "groups": [
           {

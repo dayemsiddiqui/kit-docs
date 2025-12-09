@@ -1,0 +1,336 @@
+---
+title: 'Models & Entities'
+description: 'Working with database models using Model and ModelMut traits'
+icon: 'cube'
+---
+
+Kit provides Laravel-inspired traits for working with database models, making common CRUD operations simple and intuitive.
+
+## Entity Structure
+
+Kit uses SeaORM entities. Each model consists of three parts:
+
+```rust
+// src/models/todos.rs
+use sea_orm::entity::prelude::*;
+
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize)]
+#[sea_orm(table_name = "todos")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    pub id: i32,
+    pub title: String,
+    pub completed: bool,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
+}
+
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {}
+
+impl ActiveModelBehavior for ActiveModel {}
+```
+
+## Generating Entities
+
+Use the `db:sync` command to generate entities from your database:
+
+```bash
+# Run migrations and generate entities
+kit db:sync
+
+# Skip migrations, just regenerate entities
+kit db:sync --skip-migrations
+```
+
+This creates entity files in `src/models/` based on your database schema.
+
+## The Model Trait
+
+The `Model` trait provides read-only operations for querying data:
+
+```rust
+use kit::database::Model;
+use crate::models::todos::Entity as Todos;
+```
+
+### all()
+
+Retrieve all records from the table:
+
+```rust
+let todos = Todos::all().await?;
+// Returns: Vec<Model>
+```
+
+### find_by_pk()
+
+Find a record by its primary key:
+
+```rust
+let todo = Todos::find_by_pk(1).await?;
+// Returns: Option<Model>
+```
+
+### find_or_fail()
+
+Find a record or return an error:
+
+```rust
+let todo = Todos::find_or_fail(1).await?;
+// Returns: Result<Model, DbErr>
+// Errors if not found
+```
+
+### first()
+
+Get the first record:
+
+```rust
+let todo = Todos::first().await?;
+// Returns: Option<Model>
+```
+
+### count_all()
+
+Count all records:
+
+```rust
+let count = Todos::count_all().await?;
+// Returns: u64
+```
+
+### exists_any()
+
+Check if any records exist:
+
+```rust
+let has_todos = Todos::exists_any().await?;
+// Returns: bool
+```
+
+## The ModelMut Trait
+
+The `ModelMut` trait provides write operations for creating, updating, and deleting data:
+
+```rust
+use kit::database::ModelMut;
+use crate::models::todos::{Entity as Todos, ActiveModel};
+use sea_orm::ActiveValue::Set;
+```
+
+### insert_one()
+
+Insert a new record:
+
+```rust
+let new_todo = ActiveModel {
+    title: Set("Learn Kit".to_string()),
+    completed: Set(false),
+    ..Default::default()
+};
+
+let created = Todos::insert_one(new_todo).await?;
+// Returns: InsertResult<ActiveModel>
+```
+
+### update_one()
+
+Update an existing record:
+
+```rust
+let mut todo: ActiveModel = existing_todo.into();
+todo.title = Set("Updated title".to_string());
+
+let updated = Todos::update_one(todo).await?;
+// Returns: Model
+```
+
+### save_one()
+
+Insert or update based on primary key:
+
+```rust
+let todo = ActiveModel {
+    id: Set(1),  // If exists, updates; if not, inserts
+    title: Set("New or updated".to_string()),
+    completed: Set(false),
+    ..Default::default()
+};
+
+let saved = Todos::save_one(todo).await?;
+// Returns: ActiveModel
+```
+
+### delete_by_pk()
+
+Delete a record by primary key:
+
+```rust
+let deleted = Todos::delete_by_pk(1).await?;
+// Returns: DeleteResult
+```
+
+## Complete Example
+
+Here's a complete CRUD controller using both traits:
+
+```rust
+// src/controllers/todos.rs
+use kit::{json_response, Request, Response};
+use kit::database::{Model, ModelMut};
+use crate::models::todos::{Entity as Todos, ActiveModel, Model as Todo};
+use sea_orm::ActiveValue::Set;
+
+// GET /todos
+pub async fn index(_req: Request) -> Response {
+    match Todos::all().await {
+        Ok(todos) => json_response!({ "todos": todos }),
+        Err(e) => json_response!({ "error": e.to_string() }),
+    }
+}
+
+// GET /todos/:id
+pub async fn show(req: Request) -> Response {
+    let id: i32 = req.param("id").unwrap().parse().unwrap();
+
+    match Todos::find_or_fail(id).await {
+        Ok(todo) => json_response!({ "todo": todo }),
+        Err(_) => json_response!({ "error": "Todo not found" }),
+    }
+}
+
+// POST /todos
+pub async fn store(req: Request) -> Response {
+    // Parse request body for title
+    let title = "New Todo".to_string();
+
+    let new_todo = ActiveModel {
+        title: Set(title),
+        completed: Set(false),
+        ..Default::default()
+    };
+
+    match Todos::insert_one(new_todo).await {
+        Ok(result) => json_response!({ "id": result.last_insert_id }),
+        Err(e) => json_response!({ "error": e.to_string() }),
+    }
+}
+
+// PUT /todos/:id
+pub async fn update(req: Request) -> Response {
+    let id: i32 = req.param("id").unwrap().parse().unwrap();
+
+    // Find existing record
+    let existing = Todos::find_or_fail(id).await.unwrap();
+
+    // Convert to active model and update
+    let mut todo: ActiveModel = existing.into();
+    todo.completed = Set(true);
+
+    match Todos::update_one(todo).await {
+        Ok(updated) => json_response!({ "todo": updated }),
+        Err(e) => json_response!({ "error": e.to_string() }),
+    }
+}
+
+// DELETE /todos/:id
+pub async fn destroy(req: Request) -> Response {
+    let id: i32 = req.param("id").unwrap().parse().unwrap();
+
+    match Todos::delete_by_pk(id).await {
+        Ok(result) => json_response!({
+            "deleted": result.rows_affected > 0
+        }),
+        Err(e) => json_response!({ "error": e.to_string() }),
+    }
+}
+```
+
+## Working with ActiveModel
+
+`ActiveModel` is SeaORM's way of representing records that can be inserted or updated:
+
+```rust
+use sea_orm::ActiveValue::{Set, NotSet, Unchanged};
+
+// Creating a new record (no ID)
+let new_todo = ActiveModel {
+    id: NotSet,                        // Auto-increment
+    title: Set("New task".to_string()),
+    completed: Set(false),
+    created_at: NotSet,                // Use database default
+    updated_at: NotSet,
+};
+
+// Updating an existing record
+let mut update_todo = ActiveModel {
+    id: Unchanged(1),                  // Keep the same ID
+    title: Set("Updated title".to_string()),
+    completed: Unchanged(false),       // Don't change this field
+    ..Default::default()
+};
+```
+
+### ActiveValue States
+
+| State | Meaning | SQL Behavior |
+|-------|---------|--------------|
+| `Set(value)` | Set to this value | Included in INSERT/UPDATE |
+| `NotSet` | Not specified | Excluded (uses default) |
+| `Unchanged(value)` | Keep current value | Excluded from UPDATE |
+
+## Model Relationships
+
+Define relationships in your entity:
+
+```rust
+// src/models/posts.rs
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::users::Entity",
+        from = "Column::UserId",
+        to = "super::users::Column::Id"
+    )]
+    User,
+}
+
+impl Related<super::users::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::User.def()
+    }
+}
+```
+
+### Loading Relationships
+
+```rust
+use sea_orm::EntityTrait;
+use crate::models::{posts, users};
+
+// Find post with its user
+let post_with_user = posts::Entity::find_by_id(1)
+    .find_also_related(users::Entity)
+    .one(DB::connection())
+    .await?;
+
+if let Some((post, Some(user))) = post_with_user {
+    println!("Post: {}, Author: {}", post.title, user.name);
+}
+```
+
+## Summary
+
+| Trait | Method | Description |
+|-------|--------|-------------|
+| `Model` | `all()` | Get all records |
+| `Model` | `find_by_pk(id)` | Find by primary key |
+| `Model` | `find_or_fail(id)` | Find or error |
+| `Model` | `first()` | Get first record |
+| `Model` | `count_all()` | Count all records |
+| `Model` | `exists_any()` | Check if any exist |
+| `ModelMut` | `insert_one(model)` | Insert a record |
+| `ModelMut` | `update_one(model)` | Update a record |
+| `ModelMut` | `save_one(model)` | Insert or update |
+| `ModelMut` | `delete_by_pk(id)` | Delete by primary key |
