@@ -1,6 +1,6 @@
 ---
 title: 'Models & Entities'
-description: 'Working with database models using Queryable and QueryableMut traits'
+description: 'Working with database models using Model and ModelMut traits'
 icon: 'cube'
 ---
 
@@ -45,17 +45,17 @@ kit db:sync --skip-migrations
 
 This creates entity files in `src/models/` based on your database schema.
 
-## The Queryable Trait
+## The Model Trait
 
-The `Queryable` trait provides read-only operations for querying data:
+The `Model` trait provides read-only operations for querying data:
 
 ```rust
-use kit::database::Queryable;
+use kit::database::Model;
 use crate::models::todos::Entity as Todos;
 ```
 
 <Note>
-Implementing `kit::database::Queryable` also enables [Route Model Binding](/core/routing#route-model-binding), allowing you to use `Model` types directly as handler parameters for automatic database lookup.
+Implementing `kit::database::Model` also enables [Route Model Binding](/core/routing#route-model-binding), allowing you to use `Model` types directly as handler parameters for automatic database lookup.
 </Note>
 
 ### all()
@@ -113,12 +113,12 @@ let has_todos = Todos::exists_any().await?;
 // Returns: bool
 ```
 
-## The QueryableMut Trait
+## The ModelMut Trait
 
-The `QueryableMut` trait provides write operations for creating, updating, and deleting data:
+The `ModelMut` trait provides write operations for creating, updating, and deleting data:
 
 ```rust
-use kit::database::QueryableMut;
+use kit::database::ModelMut;
 use crate::models::todos::{Entity as Todos, ActiveModel};
 use sea_orm::ActiveValue::Set;
 ```
@@ -182,7 +182,7 @@ Here's a complete CRUD controller using both traits:
 ```rust
 // src/controllers/todos.rs
 use kit::{json_response, Request, Response};
-use kit::database::{Queryable, QueryableMut};
+use kit::database::{Model, ModelMut};
 use crate::models::todos::{Entity as Todos, ActiveModel, Model as Todo};
 use sea_orm::ActiveValue::Set;
 
@@ -328,13 +328,13 @@ if let Some((post, Some(user))) = post_with_user {
 
 | Trait | Method | Description |
 |-------|--------|-------------|
-| `Queryable` | `all()` | Get all records |
-| `Queryable` | `find_by_pk(id)` | Find by primary key |
-| `Queryable` | `find_or_fail(id)` | Find or error |
-| `Queryable` | `first()` | Get first record |
-| `Queryable` | `count_all()` | Count all records |
-| `Queryable` | `exists_any()` | Check if any exist |
-| `QueryableMut` | `insert_one(model)` | Insert a record |
-| `QueryableMut` | `update_one(model)` | Update a record |
-| `QueryableMut` | `save_one(model)` | Insert or update |
-| `QueryableMut` | `delete_by_pk(id)` | Delete by primary key |
+| `Model` | `all()` | Get all records |
+| `Model` | `find_by_pk(id)` | Find by primary key |
+| `Model` | `find_or_fail(id)` | Find or error |
+| `Model` | `first()` | Get first record |
+| `Model` | `count_all()` | Count all records |
+| `Model` | `exists_any()` | Check if any exist |
+| `ModelMut` | `insert_one(model)` | Insert a record |
+| `ModelMut` | `update_one(model)` | Update a record |
+| `ModelMut` | `save_one(model)` | Insert or update |
+| `ModelMut` | `delete_by_pk(id)` | Delete by primary key |
