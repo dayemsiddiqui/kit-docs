@@ -9,7 +9,7 @@ In this tutorial, you'll build a complete todo application with a React frontend
 ## What We're Building
 
 A full-featured todo app with:
-- List todos with filtering
+- List all todos
 - Create new todos
 - Mark todos as complete
 - Edit and delete todos
@@ -109,7 +109,6 @@ use serde::{Deserialize, Serialize};
 #[derive(InertiaProps)]
 pub struct TodoIndexProps {
     pub todos: Vec<Todo>,
-    pub filter: String,
 }
 
 // Props for the create/edit page
@@ -129,32 +128,9 @@ pub struct TodoRequest {
 }
 
 // GET /todos
-pub async fn index(req: Request) -> Response {
-    let filter = req.query("filter").unwrap_or("all".to_string());
-
-    let todos = match filter.as_str() {
-        "completed" => {
-            use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
-            use crate::models::todos::Column;
-            Todos::find()
-                .filter(Column::Completed.eq(true))
-                .all(kit::database::DB::connection())
-                .await
-                .unwrap_or_default()
-        }
-        "pending" => {
-            use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
-            use crate::models::todos::Column;
-            Todos::find()
-                .filter(Column::Completed.eq(false))
-                .all(kit::database::DB::connection())
-                .await
-                .unwrap_or_default()
-        }
-        _ => Todos::all().await.unwrap_or_default(),
-    };
-
-    inertia_response!("Todos/Index", TodoIndexProps { todos, filter })
+pub async fn index(_req: Request) -> Response {
+    let todos = Todos::all().await.unwrap_or_default();
+    inertia_response!("Todos/Index", TodoIndexProps { todos })
 }
 
 // GET /todos/create
@@ -235,16 +211,14 @@ Edit `src/routes.rs`:
 use kit::routes;
 use crate::controllers::todos;
 
-pub fn routes() -> Vec<kit::Route> {
-    routes![
-        get "/todos" => todos::index,
-        get "/todos/create" => todos::create,
-        post "/todos" => todos::store,
-        get "/todos/{id}/edit" => todos::edit,
-        put "/todos/{id}" => todos::update,
-        post "/todos/{id}/toggle" => todos::toggle,
-        delete "/todos/{id}" => todos::destroy,
-    ]
+routes! {
+    get("/todos", todos::index).name("todos.index"),
+    get("/todos/create", todos::create).name("todos.create"),
+    post("/todos", todos::store).name("todos.store"),
+    get("/todos/{id}/edit", todos::edit).name("todos.edit"),
+    put("/todos/{id}", todos::update).name("todos.update"),
+    post("/todos/{id}/toggle", todos::toggle).name("todos.toggle"),
+    delete("/todos/{id}", todos::destroy).name("todos.destroy"),
 }
 ```
 
@@ -268,7 +242,6 @@ export interface Todo {
 
 export interface TodoIndexProps {
   todos: Todo[]
-  filter: string
 }
 
 export interface TodoFormProps {
@@ -348,7 +321,7 @@ import { Link, router } from '@inertiajs/react'
 import type { TodoIndexProps } from '../../types/inertia-props'
 import { controllers } from '../../types/routes'
 
-export default function TodoIndex({ todos, filter }: TodoIndexProps) {
+export default function TodoIndex({ todos }: TodoIndexProps) {
   const toggleTodo = (id: number) => {
     router.visit(controllers.todos.toggle({ id: String(id) }))
   }
@@ -368,34 +341,6 @@ export default function TodoIndex({ todos, filter }: TodoIndexProps) {
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           Add Todo
-        </Link>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-2 mb-6">
-        <Link
-          href={controllers.todos.index()}
-          className={`px-3 py-1 rounded ${
-            filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200'
-          }`}
-        >
-          All
-        </Link>
-        <Link
-          href={`${controllers.todos.index().url}?filter=pending`}
-          className={`px-3 py-1 rounded ${
-            filter === 'pending' ? 'bg-blue-500 text-white' : 'bg-gray-200'
-          }`}
-        >
-          Pending
-        </Link>
-        <Link
-          href={`${controllers.todos.index().url}?filter=completed`}
-          className={`px-3 py-1 rounded ${
-            filter === 'completed' ? 'bg-blue-500 text-white' : 'bg-gray-200'
-          }`}
-        >
-          Completed
         </Link>
       </div>
 
@@ -593,7 +538,7 @@ You've built a complete CRUD application with end-to-end type safety:
 - React pages with type-safe props
 - Type-safe routes with `controllers` object (no magic strings!)
 - Forms with `<Form>` component and validation feedback
-- Type-safe filtering and navigation
+- Type-safe navigation
 
 ## Next Steps
 
