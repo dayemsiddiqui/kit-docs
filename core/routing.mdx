@@ -291,39 +291,85 @@ For more details on creating middleware, see the [Middleware documentation](/cor
 
 ## Route Groups
 
-Group related routes that share a common prefix and/or middleware using the fluent `Router` API:
+Group related routes that share a common prefix and/or middleware using the `group!` macro inside `routes!`:
 
 ```rust
-use kit::Router;
+use kit::{get, post, group, routes};
 use crate::controllers;
 use crate::middleware::{AuthMiddleware, ApiMiddleware};
 
-Router::new()
+routes! {
     // Public routes
-    .get("/", controllers::home::index)
-    .get("/login", controllers::auth::login_form)
+    get("/", controllers::home::index).name("home"),
+    get("/login", controllers::auth::login_form).name("login"),
 
     // API routes with shared prefix
-    .group("/api", |r| {
-        r.get("/users", controllers::api::user::index)     // GET /api/users
-         .post("/users", controllers::api::user::store)    // POST /api/users
-         .get("/users/{id}", controllers::api::user::show) // GET /api/users/{id}
-    })
-    .middleware(ApiMiddleware)
+    group!("/api", {
+        get("/users", controllers::api::user::index).name("api.users.index"),   // GET /api/users
+        post("/users", controllers::api::user::store).name("api.users.store"),  // POST /api/users
+        get("/users/{id}", controllers::api::user::show).name("api.users.show"), // GET /api/users/{id}
+    }).middleware(ApiMiddleware),
 
     // Admin routes with auth middleware
-    .group("/admin", |r| {
-        r.get("/dashboard", controllers::admin::dashboard) // GET /admin/dashboard
-         .get("/settings", controllers::admin::settings)   // GET /admin/settings
-    })
-    .middleware(AuthMiddleware)
+    group!("/admin", {
+        get("/dashboard", controllers::admin::dashboard).name("admin.dashboard"), // GET /admin/dashboard
+        get("/settings", controllers::admin::settings).name("admin.settings"),   // GET /admin/settings
+    }).middleware(AuthMiddleware),
+}
 ```
 
-### Group Features
+### Group Syntax
+
+The `group!` macro takes a prefix and a block of routes:
+
+```rust
+group!("/prefix", {
+    get("/path", handler).name("route.name"),
+    post("/path", handler),
+    // ... more routes
+})
+```
+
+### Group with Middleware
+
+Apply middleware to all routes in a group using `.middleware()`:
+
+```rust
+group!("/protected", {
+    get("", controllers::dashboard::index).name("dashboard"),
+    get("/settings", controllers::settings::index).name("settings"),
+}).middleware(AuthMiddleware)
+```
+
+### Multiple Middleware
+
+Chain multiple middleware on a group:
+
+```rust
+group!("/api/v2", {
+    get("/users", controllers::api::user::index),
+    post("/users", controllers::api::user::store),
+}).middleware(AuthMiddleware).middleware(RateLimitMiddleware)
+```
+
+### Groups without Middleware
+
+Groups can be used purely for URL prefixing without any middleware:
+
+```rust
+group!("/users", {
+    get("", controllers::user::index).name("users.index"),       // GET /users
+    get("/{id}", controllers::user::show).name("users.show"),    // GET /users/{id}
+    post("", controllers::user::store).name("users.store"),      // POST /users
+}),
+```
+
+### Nested Features
 
 - **Prefix**: All routes in the group have the prefix prepended to their paths
+- **Named Routes**: Routes inside groups can have names for URL generation
 - **Middleware**: Apply middleware to all routes in the group at once
-- **Chaining**: Groups can be chained with other routes and groups
+- **Chaining**: Multiple middleware can be chained on a group
 
 ## File Organization
 
@@ -347,22 +393,25 @@ src/
 
 **src/routes.rs:**
 ```rust
-use kit::{get, post, put, delete, routes};
+use kit::{get, post, put, delete, group, routes};
 use crate::controllers;
 use crate::middleware::AuthMiddleware;
 
 routes! {
     get("/", controllers::home::index).name("home"),
 
-    // User routes
-    get("/users", controllers::user::index).name("users.index"),
-    get("/users/{id}", controllers::user::show).name("users.show"),
-    post("/users", controllers::user::store).name("users.store"),
+    // User routes with shared prefix
+    group!("/users", {
+        get("", controllers::user::index).name("users.index"),
+        get("/{id}", controllers::user::show).name("users.show"),
+        post("", controllers::user::store).name("users.store"),
+    }),
 
-    // Protected routes
-    get("/dashboard", controllers::home::dashboard)
-        .name("dashboard")
-        .middleware(AuthMiddleware),
+    // Protected routes with middleware
+    group!("/dashboard", {
+        get("", controllers::home::dashboard).name("dashboard"),
+        get("/settings", controllers::settings::index).name("dashboard.settings"),
+    }).middleware(AuthMiddleware),
 }
 ```
 
@@ -381,4 +430,5 @@ routes! {
 | Named route | `.name("users.show")` | Name for URL generation |
 | Generate URL | `route("name", &[...])` | Generate URL from name |
 | Route middleware | `.middleware(M)` | Apply middleware to route |
-| Route group | `.group("/prefix", \|r\| ...)` | Group routes with prefix |
+| Route group | `group!("/prefix", { ... })` | Group routes with shared prefix |
+| Group middleware | `.middleware(M)` | Apply middleware to all group routes |
