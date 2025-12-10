@@ -99,11 +99,10 @@ kit make:controller todos
 Edit `src/controllers/todos.rs`:
 
 ```rust
-use kit::{inertia_response, Request, Response, InertiaProps, redirect};
+use kit::{handler, inertia_response, request, Request, Response, InertiaProps, redirect};
 use kit::database::{Model, ModelMut};
 use crate::models::todos::{Entity as Todos, ActiveModel, Model as Todo};
 use sea_orm::ActiveValue::Set;
-use serde::{Deserialize, Serialize};
 
 // Props for the index page
 #[derive(InertiaProps)]
@@ -117,10 +116,8 @@ pub struct TodoFormProps {
     pub todo: Option<Todo>,
 }
 
-// FormRequest for creating/updating todos with validation
-use kit::{form_request, InertiaProps};
-
-#[form_request]
+// Request for creating/updating todos with validation
+#[request]
 #[derive(InertiaProps)]
 pub struct TodoRequest {
     #[validate(length(min = 1, message = "Title is required"))]
@@ -128,19 +125,19 @@ pub struct TodoRequest {
 }
 
 // GET /todos
+#[handler]
 pub async fn index(_req: Request) -> Response {
     let todos = Todos::all().await.unwrap_or_default();
     inertia_response!("Todos/Index", TodoIndexProps { todos })
 }
 
 // GET /todos/create
+#[handler]
 pub async fn create(_req: Request) -> Response {
     inertia_response!("Todos/Create", TodoFormProps { todo: None })
 }
 
-// POST /todos - Uses FormRequest for automatic validation
-use kit::handler;
-
+// POST /todos - Uses Request for automatic validation
 #[handler]
 pub async fn store(form: TodoRequest) -> Response {
     // `form` is already validated - returns 422 if validation fails
@@ -157,6 +154,7 @@ pub async fn store(form: TodoRequest) -> Response {
 }
 
 // GET /todos/:id/edit
+#[handler]
 pub async fn edit(req: Request) -> Response {
     let id: i32 = req.param("id").unwrap().parse().unwrap();
 
@@ -169,13 +167,13 @@ pub async fn edit(req: Request) -> Response {
 }
 
 // PUT /todos/:id
-pub async fn update(req: Request) -> Response {
+#[handler]
+pub async fn update(req: Request, form: TodoRequest) -> Response {
     let id: i32 = req.param("id").unwrap().parse().unwrap();
-    let body: TodoRequest = req.json().await.unwrap();
 
     if let Ok(Some(existing)) = Todos::find_by_pk(id).await {
         let mut active: ActiveModel = existing.into();
-        active.title = Set(body.title);
+        active.title = Set(form.title);
         let _ = Todos::update_one(active).await;
     }
 
@@ -183,6 +181,7 @@ pub async fn update(req: Request) -> Response {
 }
 
 // POST /todos/:id/toggle
+#[handler]
 pub async fn toggle(req: Request) -> Response {
     let id: i32 = req.param("id").unwrap().parse().unwrap();
 
@@ -196,6 +195,7 @@ pub async fn toggle(req: Request) -> Response {
 }
 
 // DELETE /todos/:id
+#[handler]
 pub async fn destroy(req: Request) -> Response {
     let id: i32 = req.param("id").unwrap().parse().unwrap();
     let _ = Todos::delete_by_pk(id).await;

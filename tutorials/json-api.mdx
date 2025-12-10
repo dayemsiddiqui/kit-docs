@@ -110,26 +110,32 @@ kit make:controller todos
 Edit `src/controllers/todos.rs`:
 
 ```rust
-use kit::{json_response, Request, Response};
+use kit::{handler, request, json_response, Request, Response};
 use kit::database::{Model, ModelMut};
 use crate::models::todos::{Entity as Todos, ActiveModel, Model as Todo};
 use sea_orm::ActiveValue::Set;
-use serde::Deserialize;
 
-#[derive(Deserialize)]
+// Request struct for creating todos with validation
+#[request]
 pub struct CreateTodoRequest {
+    #[validate(length(min = 1, max = 255, message = "Title is required"))]
     pub title: String,
+    #[validate(length(max = 1000))]
     pub description: Option<String>,
 }
 
-#[derive(Deserialize)]
+// Request struct for updating todos with validation
+#[request]
 pub struct UpdateTodoRequest {
+    #[validate(length(min = 1, max = 255))]
     pub title: Option<String>,
+    #[validate(length(max = 1000))]
     pub description: Option<String>,
     pub completed: Option<bool>,
 }
 
 // GET /api/todos
+#[handler]
 pub async fn index(_req: Request) -> Response {
     match Todos::all().await {
         Ok(todos) => json_response!({
@@ -143,6 +149,7 @@ pub async fn index(_req: Request) -> Response {
 }
 
 // GET /api/todos/:id
+#[handler]
 pub async fn show(req: Request) -> Response {
     let id: i32 = match req.param("id").unwrap().parse() {
         Ok(id) => id,
@@ -157,17 +164,14 @@ pub async fn show(req: Request) -> Response {
 }
 
 // POST /api/todos
-pub async fn store(req: Request) -> Response {
-    let body: CreateTodoRequest = match req.json().await {
-        Ok(body) => body,
-        Err(_) => return json_response!({"error": "Invalid request body"}, 400),
-    };
-
+#[handler]
+pub async fn store(form: CreateTodoRequest) -> Response {
+    // `form` is already validated - returns 422 with errors if invalid
     let now = chrono::Utc::now().naive_utc();
 
     let new_todo = ActiveModel {
-        title: Set(body.title),
-        description: Set(body.description),
+        title: Set(form.title),
+        description: Set(form.description),
         completed: Set(false),
         created_at: Set(now),
         updated_at: Set(now),
@@ -184,15 +188,11 @@ pub async fn store(req: Request) -> Response {
 }
 
 // PUT /api/todos/:id
-pub async fn update(req: Request) -> Response {
+#[handler]
+pub async fn update(req: Request, form: UpdateTodoRequest) -> Response {
     let id: i32 = match req.param("id").unwrap().parse() {
         Ok(id) => id,
         Err(_) => return json_response!({"error": "Invalid ID"}, 400),
-    };
-
-    let body: UpdateTodoRequest = match req.json().await {
-        Ok(body) => body,
-        Err(_) => return json_response!({"error": "Invalid request body"}, 400),
     };
 
     // Find existing todo
@@ -205,13 +205,13 @@ pub async fn update(req: Request) -> Response {
     // Update fields
     let mut active: ActiveModel = existing.into();
 
-    if let Some(title) = body.title {
+    if let Some(title) = form.title {
         active.title = Set(title);
     }
-    if let Some(description) = body.description {
+    if let Some(description) = form.description {
         active.description = Set(Some(description));
     }
-    if let Some(completed) = body.completed {
+    if let Some(completed) = form.completed {
         active.completed = Set(completed);
     }
     active.updated_at = Set(chrono::Utc::now().naive_utc());
@@ -223,6 +223,7 @@ pub async fn update(req: Request) -> Response {
 }
 
 // DELETE /api/todos/:id
+#[handler]
 pub async fn destroy(req: Request) -> Response {
     let id: i32 = match req.param("id").unwrap().parse() {
         Ok(id) => id,
@@ -331,31 +332,37 @@ curl -X DELETE http://localhost:8080/api/todos/1
 
 ## Adding Validation
 
-You can add validation using the `validator` crate:
+The `#[request]` attribute automatically handles validation using the `validator` crate. When validation fails, Kit returns a 422 response with Laravel/Inertia-compatible error format:
 
 ```rust
-use validator::Validate;
+use kit::{handler, request, json_response, Response};
 
-#[derive(Deserialize, Validate)]
+#[request]
 pub struct CreateTodoRequest {
-    #[validate(length(min = 1, max = 255))]
+    #[validate(length(min = 1, max = 255, message = "Title is required"))]
     pub title: String,
     #[validate(length(max = 1000))]
     pub description: Option<String>,
 }
 
-pub async fn store(req: Request) -> Response {
-    let body: CreateTodoRequest = match req.json().await {
-        Ok(body) => body,
-        Err(_) => return json_response!({"error": "Invalid request body"}, 400),
-    };
-
-    // Validate
-    if let Err(errors) = body.validate() {
-        return json_response!({"error": "Validation failed", "details": errors}, 422);
-    }
+#[handler]
+pub async fn store(form: CreateTodoRequest) -> Response {
+    // `form` is already validated - this code only runs if validation passes
+    // Returns 422 with error details if validation fails
 
     // ... rest of the handler
+    json_response!({"message": "Todo created"}, 201)
+}
+```
+
+If validation fails, the response looks like:
+
+```json
+{
+    "message": "The given data was invalid.",
+    "errors": {
+        "title": ["Title is required"]
+    }
 }
 ```
 

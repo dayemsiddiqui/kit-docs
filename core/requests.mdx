@@ -1,14 +1,14 @@
 ---
-title: 'Form Requests'
-description: 'Validate and parse incoming request data with form requests'
+title: 'Requests'
+description: 'Validate and parse incoming request data with the #[request] attribute'
 icon: 'file-check'
 ---
 
-Kit provides a Laravel-inspired FormRequest pattern for handling incoming request data with automatic validation. This feature allows you to cleanly extract and validate JSON or form data from POST requests.
+Kit provides a simple pattern for handling incoming request data with automatic validation. The `#[request]` attribute works with both JSON and form-urlencoded data, making it suitable for REST APIs and HTML forms alike.
 
 ## Overview
 
-FormRequests combine three concerns into a single, declarative struct:
+Requests combine three concerns into a single, declarative struct:
 1. **Data parsing** - Automatically parse JSON or form-urlencoded data
 2. **Validation** - Validate fields using the `validator` crate
 3. **Authorization** - Optionally check if the request is authorized
@@ -27,13 +27,13 @@ pub async fn index(req: Request) -> Response {
 }
 ```
 
-When combined with FormRequests, validation happens automatically:
+When combined with validated request types, validation happens automatically:
 
 ```rust
 use kit::{handler, json_response, Response};
 use crate::requests::CreateUserRequest;
 
-// FormRequest handler - automatically validates incoming data
+// Request handler - automatically validates incoming data
 #[handler]
 pub async fn store(form: CreateUserRequest) -> Response {
     // `form` is already validated - this code only runs if validation passes
@@ -44,9 +44,9 @@ pub async fn store(form: CreateUserRequest) -> Response {
 }
 ```
 
-## Generating Form Requests
+## Generating Requests
 
-Use the Kit CLI to generate a new form request:
+Use the Kit CLI to generate a new request:
 
 ```bash
 kit make:request CreateUser
@@ -55,23 +55,23 @@ kit make:request CreateUser
 This creates `src/requests/create_user.rs`:
 
 ```rust
-use kit::form_request;
+use kit::request;
 
-#[form_request]
+#[request]
 pub struct CreateUserRequest {
     #[validate(length(min = 1, message = "This field is required"))]
     pub field: String,
 }
 ```
 
-## Defining a Form Request
+## Defining a Request
 
-The `#[form_request]` attribute automatically adds `Deserialize` and `Validate` derives:
+The `#[request]` attribute automatically adds `Deserialize` and `Validate` derives:
 
 ```rust
-use kit::form_request;
+use kit::request;
 
-#[form_request]
+#[request]
 pub struct CreateUserRequest {
     #[validate(email(message = "Please provide a valid email address"))]
     pub email: String,
@@ -91,7 +91,7 @@ Kit uses the `validator` crate for validation. Here are common validation rules:
 ### String Validations
 
 ```rust
-#[form_request]
+#[request]
 pub struct ExampleRequest {
     // Required (non-empty)
     #[validate(length(min = 1, message = "This field is required"))]
@@ -118,7 +118,7 @@ pub struct ExampleRequest {
 ### Numeric Validations
 
 ```rust
-#[form_request]
+#[request]
 pub struct ProductRequest {
     // Range validation
     #[validate(range(min = 0, max = 10000, message = "Price must be between 0 and 10000"))]
@@ -148,7 +148,7 @@ pub struct Address {
     pub city: String,
 }
 
-#[form_request]
+#[request]
 pub struct OrderRequest {
     // Nested struct validation
     #[validate(nested)]
@@ -195,13 +195,13 @@ This format integrates seamlessly with Inertia.js form handling on the frontend.
 
 Here's a complete example of a user registration endpoint:
 
-**Define the form request:**
+**Define the request:**
 
 ```rust
 // src/requests/create_user.rs
-use kit::form_request;
+use kit::request;
 
-#[form_request]
+#[request]
 pub struct CreateUserRequest {
     #[validate(email(message = "Please provide a valid email address"))]
     pub email: String,
@@ -260,9 +260,9 @@ routes! {
 You can override the `authorize` method to add authorization checks:
 
 ```rust
-use kit::form_request;
+use kit::request;
 
-#[form_request]
+#[request]
 pub struct DeleteUserRequest {
     pub user_id: i64,
 }
@@ -288,16 +288,16 @@ HTTP 403 Forbidden
 
 ## Request Content Types
 
-FormRequests automatically detect and parse the content type:
+Requests automatically detect and parse the content type:
 
 - `application/json` - Parsed as JSON
 - `application/x-www-form-urlencoded` - Parsed as form data
 
 The parsing is handled automatically based on the `Content-Type` header.
 
-## Using Request with FormRequest
+## Using Request with Validated Data
 
-If you need access to both the validated form data and the original request (for headers, params, etc.), you can still access request information in your controller:
+If you need access to both the validated data and the original request (for headers, params, etc.), you can still access request information in your controller:
 
 ```rust
 use kit::{handler, json_response, Response, App};
@@ -318,7 +318,7 @@ pub async fn store(form: CreateUserRequest) -> Response {
 
 ## File Organization
 
-The standard structure for form requests:
+The standard structure for requests:
 
 ```
 src/
@@ -343,16 +343,16 @@ pub use update_user::UpdateUserRequest;
 
 ## End-to-End Type Safety with Inertia
 
-FormRequests can also derive `InertiaProps` to generate TypeScript types, enabling end-to-end type safety from your Rust backend to your React frontend.
+Requests can also derive `InertiaProps` to generate TypeScript types, enabling end-to-end type safety from your Rust backend to your React frontend.
 
-### Generating TypeScript Types for FormRequests
+### Generating TypeScript Types for Requests
 
-Add `InertiaProps` derive alongside `#[form_request]`:
+Add `InertiaProps` derive alongside `#[request]`:
 
 ```rust
-use kit::{form_request, InertiaProps};
+use kit::{request, InertiaProps};
 
-#[form_request]
+#[request]
 #[derive(InertiaProps)]
 pub struct CreateTodoRequest {
     #[validate(length(min = 1, message = "Title is required"))]
@@ -459,10 +459,10 @@ export default function CreateTodo() {
 
 ### Workflow
 
-1. Define FormRequest with validation in Rust
+1. Define request with validation in Rust
 2. Add `#[derive(InertiaProps)]` to the struct
 3. Run `kit generate-types` to generate TypeScript
-4. Use the generated type with `useForm<FormRequestType>`
+4. Use the generated type with `useForm<RequestType>`
 5. Get full type safety and validation error handling
 
 <Note>
@@ -474,7 +474,7 @@ For more information on TypeScript type generation, see [TypeScript Types](/fron
 | Feature | Description |
 |---------|-------------|
 | Generate request | `kit make:request Name` |
-| Define request | `#[form_request]` attribute |
+| Define request | `#[request]` attribute |
 | Handler attribute | `#[handler]` on all controller methods |
 | Validation | Use `#[validate(...)]` attributes |
 | Error format | Laravel/Inertia-compatible 422 JSON |
