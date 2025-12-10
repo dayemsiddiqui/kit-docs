@@ -300,17 +300,17 @@ Create `frontend/src/pages/Todos/Index.tsx`:
 
 ```tsx
 import { Link, router } from '@inertiajs/react'
-import type { TodoIndexProps } from '../../types/inertia-props'
+import type { Todo, TodoIndexProps } from '../../types/inertia-props'
 import { controllers } from '../../types/routes'
 
 export default function TodoIndex({ todos }: TodoIndexProps) {
-  const toggleTodo = (id: number) => {
-    router.visit(controllers.todos.toggle({ todo: String(id) }))
+  const toggleTodo = (todo: Todo) => {
+    router.visit(controllers.todos.toggle({ todo: todo.id.toString() }))
   }
 
-  const deleteTodo = (id: number) => {
+  const deleteTodo = (todo: Todo) => {
     if (confirm('Are you sure?')) {
-      router.visit(controllers.todos.destroy({ todo: String(id) }))
+      router.visit(controllers.todos.destroy({ todo: todo.id.toString() }))
     }
   }
 
@@ -339,7 +339,7 @@ export default function TodoIndex({ todos }: TodoIndexProps) {
               <input
                 type="checkbox"
                 checked={todo.completed}
-                onChange={() => toggleTodo(todo.id)}
+                onChange={() => toggleTodo(todo)}
                 className="w-5 h-5"
               />
               <span
@@ -350,13 +350,13 @@ export default function TodoIndex({ todos }: TodoIndexProps) {
                 {todo.title}
               </span>
               <Link
-                href={controllers.todos.edit({ todo: String(todo.id) })}
+                href={controllers.todos.edit({ todo: todo.id.toString() })}
                 className="text-blue-500 hover:underline"
               >
                 Edit
               </Link>
               <button
-                onClick={() => deleteTodo(todo.id)}
+                onClick={() => deleteTodo(todo)}
                 className="text-red-500 hover:underline"
               >
                 Delete
