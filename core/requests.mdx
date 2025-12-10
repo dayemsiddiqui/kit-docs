@@ -44,26 +44,6 @@ pub async fn store(form: CreateUserRequest) -> Response {
 }
 ```
 
-## Generating Requests
-
-Use the Kit CLI to generate a new request:
-
-```bash
-kit make:request CreateUser
-```
-
-This creates `src/requests/create_user.rs`:
-
-```rust
-use kit::request;
-
-#[request]
-pub struct CreateUserRequest {
-    #[validate(length(min = 1, message = "This field is required"))]
-    pub field: String,
-}
-```
-
 ## Defining a Request
 
 The `#[request]` attribute automatically adds `Deserialize` and `Validate` derives:
@@ -473,7 +453,6 @@ For more information on TypeScript type generation, see [TypeScript Types](/fron
 
 | Feature | Description |
 |---------|-------------|
-| Generate request | `kit make:request Name` |
 | Define request | `#[request]` attribute |
 | Handler attribute | `#[handler]` on all controller methods |
 | Validation | Use `#[validate(...)]` attributes |
