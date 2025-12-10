@@ -34,8 +34,9 @@ kit make:controller OrderItem  # Creates order_item.rs
 ```rust Generated File
 //! User controller
 
-use kit::{json_response, Request, Response};
+use kit::{handler, json_response, Request, Response};
 
+#[handler]
 pub async fn invoke(_req: Request) -> Response {
     json_response!({
         "controller": "User"
@@ -47,11 +48,12 @@ pub async fn invoke(_req: Request) -> Response {
 
 ## Controller Structure
 
-Controllers are async functions that take a `Request` and return a `Response`:
+Controllers are async functions decorated with `#[handler]` that take a `Request` and return a `Response`:
 
 ```rust
-use kit::{Request, Response, json_response};
+use kit::{handler, Request, Response, json_response};
 
+#[handler]
 pub async fn index(_req: Request) -> Response {
     json_response!({
         "message": "Hello from controller"
@@ -59,17 +61,26 @@ pub async fn index(_req: Request) -> Response {
 }
 ```
 
-### The Handler Signature
+### The Handler Attribute
 
-Every controller handler follows this pattern:
+All controller methods use the `#[handler]` attribute. This enables:
+- Automatic extraction and validation of request data
+- Clean integration with FormRequests for POST data validation
+- Future DX improvements like dependency injection
 
 ```rust
+#[handler]
 pub async fn handler_name(request: Request) -> Response
 ```
 
+- **`#[handler]`**: Required attribute that enables automatic parameter extraction
 - **`async fn`**: Controllers are asynchronous, allowing non-blocking I/O operations
 - **`Request`**: Contains all information about the incoming HTTP request
 - **`Response`**: An alias for `Result<HttpResponse, HttpResponse>`, enabling the `?` operator
+
+<Note>
+For handling POST data with validation, see [Form Requests](/core/form-requests).
+</Note>
 
 ## The Request Object
 
@@ -410,7 +421,9 @@ pub async fn search(_req: Request) -> Response {
 | Feature | Usage |
 |---------|-------|
 | Generate controller | `kit make:controller Name` |
+| Handler attribute | `#[handler]` on all controller methods |
 | Handler signature | `pub async fn name(req: Request) -> Response` |
+| FormRequest handler | `pub async fn name(form: FormRequest) -> Response` |
 | Get route param | `req.param("id")?` |
 | Get all params | `req.params()` |
 | Get header | `req.header("Authorization")` |

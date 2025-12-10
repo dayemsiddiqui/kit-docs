@@ -33,6 +33,7 @@
             "pages": [
               "core/routing",
               "core/controllers",
+              "core/form-requests",
               "core/actions",
               "core/dependency-injection",
               "core/bootstrap",

@@ -26,8 +26,9 @@ kit make:controller api/User
 
 ```rust
 // src/controllers/user.rs
-use kit::{json_response, Request, Response};
+use kit::{handler, json_response, Request, Response};
 
+#[handler]
 pub async fn invoke(_req: Request) -> Response {
     json_response!({
         "controller": "User"
@@ -37,8 +38,71 @@ pub async fn invoke(_req: Request) -> Response {
 
 ### What It Does
 
-1. Creates `src/controllers/<name>.rs`
+1. Creates `src/controllers/<name>.rs` with `#[handler]` attribute
 2. Updates `src/controllers/mod.rs` to export the controller
+
+---
+
+## make:request
+
+Generate a new form request with validation for handling POST data.
+
+```bash
+kit make:request <name>
+```
+
+### Examples
+
+```bash
+kit make:request CreateUser
+kit make:request UpdatePost
+kit make:request LoginCredentials
+```
+
+### Generated File
+
+```rust
+// src/requests/create_user.rs
+use kit::form_request;
+
+#[form_request]
+pub struct CreateUserRequest {
+    #[validate(length(min = 1, message = "This field is required"))]
+    pub field: String,
+
+    // Add more fields with validation:
+    // #[validate(email(message = "Invalid email address"))]
+    // pub email: String,
+    //
+    // #[validate(length(min = 8, message = "Password must be at least 8 characters"))]
+    // pub password: String,
+}
+```
+
+### What It Does
+
+1. Creates `src/requests/<name>.rs` with `#[form_request]` attribute
+2. Creates `src/requests/mod.rs` if it doesn't exist
+3. Updates `src/requests/mod.rs` with pub mod and pub use declarations
+
+### Usage
+
+Use the generated request in a controller with the `#[handler]` attribute:
+
+```rust
+use kit::{handler, json_response, Response};
+use crate::requests::CreateUserRequest;
+
+#[handler]
+pub async fn store(form: CreateUserRequest) -> Response {
+    // form is already validated - returns 422 if validation fails
+    json_response!({ "email": form.email })
+}
+```
+
+<Note>
+For more information on form requests and validation, see the [Form Requests documentation](/core/form-requests).
+</Note>
 
 ---
 
@@ -267,6 +331,7 @@ export interface UserPageProps {
 | Command | Creates | Location |
 |---------|---------|----------|
 | `make:controller <name>` | Controller | `src/controllers/` |
+| `make:request <name>` | Form Request | `src/requests/` |
 | `make:action <name>` | Action | `src/actions/` |
 | `make:middleware <name>` | Middleware | `src/middleware/` |
 | `make:error <name>` | Domain Error | `src/errors/` |
