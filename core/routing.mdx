@@ -379,6 +379,85 @@ group!("/users", {
 - **Middleware**: Apply middleware to all routes in the group at once
 - **Chaining**: Multiple middleware can be chained on a group
 
+## Fallback Route
+
+The `fallback!` macro allows you to define a custom handler that is called when no other routes match the request. This is useful for implementing custom 404 pages or catch-all handlers.
+
+### Basic Usage
+
+```rust
+use kit::{get, fallback, routes};
+use crate::controllers;
+
+routes! {
+    get!("/", controllers::home::index).name("home"),
+    get!("/users", controllers::user::index).name("users.index"),
+
+    // Custom 404 handler - called when no routes match
+    fallback!(controllers::fallback::not_found),
+}
+```
+
+### Fallback Controller Example
+
+Create a controller to handle unmatched routes:
+
+```rust
+// src/controllers/fallback.rs
+use kit::{Request, Response, HttpResponse};
+
+pub async fn not_found(request: Request) -> Response {
+    // You can access the original request path
+    let path = request.path();
+
+    Ok(HttpResponse::text(format!("Page not found: {}", path)).status(404))
+}
+```
+
+### Fallback with Middleware
+
+The fallback route supports middleware chaining, just like regular routes:
+
+```rust
+use kit::{get, fallback, routes};
+use crate::controllers;
+use crate::middleware::LoggingMiddleware;
+
+routes! {
+    get!("/", controllers::home::index),
+
+    // Log all 404 requests
+    fallback!(controllers::fallback::not_found).middleware(LoggingMiddleware),
+}
+```
+
+### Fallback with Inertia
+
+You can also return Inertia responses for SPA-style 404 pages:
+
+```rust
+// src/controllers/fallback.rs
+use kit::{Request, Response, inertia_response, InertiaProps};
+use serde::Serialize;
+
+#[derive(InertiaProps, Serialize)]
+pub struct NotFoundProps {
+    pub requested_path: String,
+}
+
+pub async fn not_found(request: Request) -> Response {
+    let path = request.path().to_string();
+
+    inertia_response!("Error/NotFound", NotFoundProps {
+        requested_path: path,
+    })
+}
+```
+
+<Note>
+If no fallback route is defined, Kit returns a default plain-text "404 Not Found" response.
+</Note>
+
 ## File Organization
 
 The standard file structure for routing in a Kit application:
@@ -440,3 +519,4 @@ routes! {
 | Route middleware | `.middleware(M)` | Apply middleware to route |
 | Route group | `group!("/prefix", { ... })` | Group routes with shared prefix |
 | Group middleware | `.middleware(M)` | Apply middleware to all group routes |
+| Fallback route | `fallback!(handler)` | Custom handler when no routes match |
