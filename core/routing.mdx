@@ -49,13 +49,21 @@ routes! {
 
 ## Route Parameters
 
-Dynamic segments in your URLs are defined using curly braces `{param}`. These parameters are extracted and made available to your handler through the request:
+Dynamic segments in your URLs are defined using curly braces `{param}`. Kit also supports Express/Rails-style colon syntax `:param` which is automatically converted. Both syntaxes are fully supported:
 
 ```rust
-// Route definition
-get!("/users/{id}", controllers::user::show).name("users.show"),
+// Both of these are equivalent:
+get!("/users/{id}", controllers::user::show),  // matchit-native syntax
+get!("/users/:id", controllers::user::show),   // Express/Rails-style syntax
+
+// Multiple parameters work with either syntax
 get!("/posts/{post_id}/comments/{comment_id}", controllers::comment::show),
+get!("/posts/:post_id/comments/:comment_id", controllers::comment::show),
 ```
+
+<Note>
+Choose whichever syntax you prefer - Kit automatically converts `:param` to `{param}` internally for compatibility with the underlying router.
+</Note>
 
 Access parameters in your controller using `request.param()`:
 
@@ -424,7 +432,7 @@ routes! {
 | POST route | `post!(path, handler)` | Handle POST requests |
 | PUT route | `put!(path, handler)` | Handle PUT requests |
 | DELETE route | `delete!(path, handler)` | Handle DELETE requests |
-| Route parameter | `/users/{id}` | Dynamic URL segment |
+| Route parameter | `/users/{id}` or `/users/:id` | Dynamic URL segment (both syntaxes supported) |
 | Access parameter | `request.param("id")` | Get parameter value |
 | Model binding | `user: user::Model` | Auto-fetch model from DB |
 | Named route | `.name("users.show")` | Name for URL generation |
