@@ -389,53 +389,47 @@ export default function TodoIndex({ todos, filter }: TodoIndexProps) {
 Create `frontend/src/pages/Todos/Create.tsx`:
 
 ```tsx
-import { Link, useForm } from '@inertiajs/react'
-import type { TodoRequest } from '../../types/inertia-props'
+import { Form, Link, usePage } from '@inertiajs/react'
 
 export default function TodoCreate() {
-  // Type-safe form using the generated TodoRequest type
-  const { data, setData, post, processing, errors } = useForm<TodoRequest>({
-    title: '',
-  })
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    post('/todos')
-  }
+  const { errors } = usePage().props
 
   return (
     <div className="max-w-md mx-auto p-8">
       <h1 className="text-2xl font-bold mb-6">Create Todo</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
-          <input
-            type="text"
-            value={data.title}
-            onChange={(e) => setData('title', e.target.value)}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="What needs to be done?"
-            autoFocus
-          />
-          {errors.title && (
-            <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-          )}
-        </div>
+      <Form action="/todos" method="post" className="space-y-4">
+        {({ processing }) => (
+          <>
+            <div>
+              <label className="block text-sm font-medium mb-1">Title</label>
+              <input
+                type="text"
+                name="title"
+                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="What needs to be done?"
+                autoFocus
+              />
+              {errors?.title && (
+                <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+              )}
+            </div>
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={processing}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-          >
-            {processing ? 'Creating...' : 'Create Todo'}
-          </button>
-          <Link href="/todos" className="px-4 py-2 text-gray-600 hover:underline">
-            Cancel
-          </Link>
-        </div>
-      </form>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={processing}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+              >
+                {processing ? 'Creating...' : 'Create Todo'}
+              </button>
+              <Link href="/todos" className="px-4 py-2 text-gray-600 hover:underline">
+                Cancel
+              </Link>
+            </div>
+          </>
+        )}
+      </Form>
     </div>
   )
 }
@@ -446,19 +440,11 @@ export default function TodoCreate() {
 Create `frontend/src/pages/Todos/Edit.tsx`:
 
 ```tsx
-import { Link, useForm } from '@inertiajs/react'
-import type { TodoFormProps, TodoRequest } from '../../types/inertia-props'
+import { Form, Link, usePage } from '@inertiajs/react'
+import type { TodoFormProps } from '../../types/inertia-props'
 
 export default function TodoEdit({ todo }: TodoFormProps) {
-  // Type-safe form using the generated TodoRequest type
-  const { data, setData, put, processing, errors } = useForm<TodoRequest>({
-    title: todo?.title || '',
-  })
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    put(`/todos/${todo?.id}`)
-  }
+  const { errors } = usePage().props
 
   if (!todo) {
     return <div>Todo not found</div>
@@ -468,34 +454,38 @@ export default function TodoEdit({ todo }: TodoFormProps) {
     <div className="max-w-md mx-auto p-8">
       <h1 className="text-2xl font-bold mb-6">Edit Todo</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
-          <input
-            type="text"
-            value={data.title}
-            onChange={(e) => setData('title', e.target.value)}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            autoFocus
-          />
-          {errors.title && (
-            <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-          )}
-        </div>
+      <Form action={`/todos/${todo.id}`} method="put" className="space-y-4">
+        {({ processing }) => (
+          <>
+            <div>
+              <label className="block text-sm font-medium mb-1">Title</label>
+              <input
+                type="text"
+                name="title"
+                defaultValue={todo.title}
+                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+              />
+              {errors?.title && (
+                <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+              )}
+            </div>
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={processing}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-          >
-            {processing ? 'Saving...' : 'Save Changes'}
-          </button>
-          <Link href="/todos" className="px-4 py-2 text-gray-600 hover:underline">
-            Cancel
-          </Link>
-        </div>
-      </form>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={processing}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+              >
+                {processing ? 'Saving...' : 'Save Changes'}
+              </button>
+              <Link href="/todos" className="px-4 py-2 text-gray-600 hover:underline">
+                Cancel
+              </Link>
+            </div>
+          </>
+        )}
+      </Form>
     </div>
   )
 }
@@ -516,7 +506,7 @@ Visit `http://localhost:8080/todos` to see your todo app in action!
 1. **No API Layer**: The Rust backend returns Inertia responses directly to React components
 2. **Type Safety**: TypeScript types are generated from Rust structs
 3. **SPA Navigation**: Page transitions happen without full page reloads
-4. **Forms**: `useForm` hook handles form state, submission, and errors
+4. **Forms**: `<Form>` component handles form submission, validation errors, and loading states
 5. **Redirects**: After mutations, redirect to update the UI
 
 ## Key Inertia Features Used
@@ -526,7 +516,7 @@ Visit `http://localhost:8080/todos` to see your todo app in action!
 | `inertia_response!` | Return page with props |
 | `redirect()` | Navigate after mutations |
 | `<Link>` | SPA navigation |
-| `useForm` | Form state management |
+| `<Form>` | Declarative form handling |
 | `router.post/delete` | Programmatic mutations |
 
 ## Summary

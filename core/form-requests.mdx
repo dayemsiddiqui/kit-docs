@@ -378,46 +378,74 @@ export interface CreateTodoRequest {
 }
 ```
 
-### Type-Safe Forms with useForm
+### Type-Safe Forms with Inertia
 
-Use the generated type with Inertia's `useForm` hook for full type safety:
+Use Inertia's `<Form>` component for the cleanest form handling:
 
 ```tsx
-import { useForm } from '@inertiajs/react'
+import { Form, usePage } from '@inertiajs/react'
+
+export default function CreateTodo() {
+  const { errors } = usePage().props
+
+  return (
+    <Form action="/todos" method="post">
+      <input
+        type="text"
+        name="title"
+        placeholder="Todo title"
+      />
+      {errors?.title && <span className="error">{errors.title}</span>}
+
+      <textarea
+        name="description"
+        placeholder="Description (optional)"
+      />
+
+      <button type="submit">Create Todo</button>
+    </Form>
+  )
+}
+```
+
+For more control, combine `<Form>` with the `useForm` hook and your generated types:
+
+```tsx
+import { Form, useForm } from '@inertiajs/react'
 import type { CreateTodoRequest } from '../types/inertia-props'
 
 export default function CreateTodo() {
-  // Full type safety - TypeScript knows the shape of your form data
-  const { data, setData, post, processing, errors } = useForm<CreateTodoRequest>({
+  const { data, setData, errors, processing } = useForm<CreateTodoRequest>({
     title: '',
     description: null,
   })
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    post('/todos')
-  }
-
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={data.title}
-        onChange={(e) => setData('title', e.target.value)} // Type-safe!
-        placeholder="Todo title"
-      />
-      {errors.title && <span className="error">{errors.title}</span>}
+    <Form action="/todos" method="post">
+      {({ processing }) => (
+        <>
+          <input
+            type="text"
+            name="title"
+            value={data.title}
+            onChange={(e) => setData('title', e.target.value)}
+            placeholder="Todo title"
+          />
+          {errors.title && <span className="error">{errors.title}</span>}
 
-      <textarea
-        value={data.description || ''}
-        onChange={(e) => setData('description', e.target.value || null)}
-        placeholder="Description (optional)"
-      />
+          <textarea
+            name="description"
+            value={data.description || ''}
+            onChange={(e) => setData('description', e.target.value || null)}
+            placeholder="Description (optional)"
+          />
 
-      <button type="submit" disabled={processing}>
-        Create Todo
-      </button>
-    </form>
+          <button type="submit" disabled={processing}>
+            Create Todo
+          </button>
+        </>
+      )}
+    </Form>
   )
 }
 ```

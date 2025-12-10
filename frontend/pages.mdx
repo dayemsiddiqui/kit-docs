@@ -138,75 +138,67 @@ export default function PostShow({ post, author }: PostShowProps) {
 
 ### Form Page
 
-Create or edit items:
+Create or edit items using Inertia's `<Form>` component:
 
 ```tsx
 // frontend/src/pages/Posts/Create.tsx
 import type { PostCreateProps } from '../../types/inertia-props'
-import { useForm } from '@inertiajs/react'
+import { Form, usePage } from '@inertiajs/react'
 
 export default function PostCreate({ categories }: PostCreateProps) {
-  const { data, setData, post, processing, errors } = useForm({
-    title: '',
-    content: '',
-    category_id: '',
-  })
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    post('/posts')
-  }
+  const { errors } = usePage().props
 
   return (
     <div className="p-8 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Create Post</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
-          <input
-            type="text"
-            value={data.title}
-            onChange={(e) => setData('title', e.target.value)}
-            className="w-full border rounded px-3 py-2"
-          />
-          {errors.title && (
-            <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-          )}
-        </div>
+      <Form action="/posts" method="post" className="space-y-4">
+        {({ processing }) => (
+          <>
+            <div>
+              <label className="block text-sm font-medium mb-1">Title</label>
+              <input
+                type="text"
+                name="title"
+                className="w-full border rounded px-3 py-2"
+              />
+              {errors?.title && (
+                <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+              )}
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Category</label>
-          <select
-            value={data.category_id}
-            onChange={(e) => setData('category_id', e.target.value)}
-            className="w-full border rounded px-3 py-2"
-          >
-            <option value="">Select a category</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
-        </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Category</label>
+              <select
+                name="category_id"
+                className="w-full border rounded px-3 py-2"
+              >
+                <option value="">Select a category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Content</label>
-          <textarea
-            value={data.content}
-            onChange={(e) => setData('content', e.target.value)}
-            rows={6}
-            className="w-full border rounded px-3 py-2"
-          />
-        </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Content</label>
+              <textarea
+                name="content"
+                rows={6}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
 
-        <button
-          type="submit"
-          disabled={processing}
-          className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
-        >
-          {processing ? 'Saving...' : 'Create Post'}
-        </button>
-      </form>
+            <button
+              type="submit"
+              disabled={processing}
+              className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              {processing ? 'Saving...' : 'Create Post'}
+            </button>
+          </>
+        )}
+      </Form>
     </div>
   )
 }
@@ -344,5 +336,5 @@ export default function PostsIndex({ posts }) {
 | Create/Edit pages | Forms for creating/editing |
 | Layouts | Shared page structure |
 | `<Link>` component | SPA navigation |
+| `<Form>` component | Declarative form handling |
 | `router` | Programmatic navigation |
-| `useForm` hook | Form handling with Inertia |

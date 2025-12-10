@@ -289,54 +289,80 @@ export interface CreateUserRequest {
 }
 ```
 
-### Type-Safe useForm
+### Type-Safe Forms with Inertia
 
-Use the generated type with Inertia's `useForm` hook:
+Use the generated type with Inertia's `<Form>` component for the cleanest approach:
+
+```tsx
+import { Form, usePage } from '@inertiajs/react'
+
+export default function Register() {
+  const { errors } = usePage().props
+
+  return (
+    <Form action="/register" method="post">
+      <input type="email" name="email" />
+      {errors?.email && <span>{errors.email}</span>}
+
+      <input type="password" name="password" />
+      {errors?.password && <span>{errors.password}</span>}
+
+      <input type="text" name="name" />
+      {errors?.name && <span>{errors.name}</span>}
+
+      <button type="submit">Register</button>
+    </Form>
+  )
+}
+```
+
+For more control over form state, use `useForm` with the generated types:
 
 ```tsx
 import { useForm } from '@inertiajs/react'
 import type { CreateUserRequest } from '../types/inertia-props'
 
 export default function Register() {
-  // Full type safety for form data
   const { data, setData, post, processing, errors } = useForm<CreateUserRequest>({
     email: '',
     password: '',
     name: '',
   })
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    post('/register')
-  }
-
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="email"
-        value={data.email}
-        onChange={(e) => setData('email', e.target.value)} // Type-safe!
-      />
-      {errors.email && <span>{errors.email}</span>}
+    <Form action="/register" method="post">
+      {({ processing }) => (
+        <>
+          <input
+            type="email"
+            name="email"
+            value={data.email}
+            onChange={(e) => setData('email', e.target.value)}
+          />
+          {errors.email && <span>{errors.email}</span>}
 
-      <input
-        type="password"
-        value={data.password}
-        onChange={(e) => setData('password', e.target.value)}
-      />
-      {errors.password && <span>{errors.password}</span>}
+          <input
+            type="password"
+            name="password"
+            value={data.password}
+            onChange={(e) => setData('password', e.target.value)}
+          />
+          {errors.password && <span>{errors.password}</span>}
 
-      <input
-        type="text"
-        value={data.name}
-        onChange={(e) => setData('name', e.target.value)}
-      />
-      {errors.name && <span>{errors.name}</span>}
+          <input
+            type="text"
+            name="name"
+            value={data.name}
+            onChange={(e) => setData('name', e.target.value)}
+          />
+          {errors.name && <span>{errors.name}</span>}
 
-      <button type="submit" disabled={processing}>
-        Register
-      </button>
-    </form>
+          <button type="submit" disabled={processing}>
+            Register
+          </button>
+        </>
+      )}
+    </Form>
   )
 }
 ```
