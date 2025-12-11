@@ -372,12 +372,59 @@ group!("/users", {
 }),
 ```
 
-### Nested Features
+### Nested Groups
+
+Groups can be nested arbitrarily deep. Nested groups inherit middleware from their parent groups, and prefixes are concatenated:
+
+```rust
+use kit::{get, post, group, routes};
+use crate::controllers;
+use crate::middleware::{AuthMiddleware, AdminMiddleware};
+
+routes! {
+    group!("/api", {
+        get!("/health", controllers::api::health),          // GET /api/health
+
+        group!("/v1", {
+            get!("/users", controllers::api::v1::users),    // GET /api/v1/users
+
+            group!("/admin", {
+                get!("/stats", controllers::admin::stats),  // GET /api/v1/admin/stats
+            }).middleware(AdminMiddleware),
+        }),
+    }).middleware(AuthMiddleware),  // Applies to ALL routes including nested groups
+}
+```
+
+In this example:
+- `/api/health` has `AuthMiddleware`
+- `/api/v1/users` has `AuthMiddleware`
+- `/api/v1/admin/stats` has both `AuthMiddleware` AND `AdminMiddleware`
+
+### Middleware Inheritance
+
+When groups are nested, middleware is inherited from parent to child. The execution order is:
+1. Parent group middleware (outermost)
+2. Child group middleware
+3. Route-specific middleware (innermost)
+
+```rust
+group!("/outer", {
+    group!("/inner", {
+        get!("/route", handler).middleware(RouteMiddleware),
+    }).middleware(InnerMiddleware),
+}).middleware(OuterMiddleware)
+```
+
+For the route `/outer/inner/route`, middleware executes in order: `OuterMiddleware` → `InnerMiddleware` → `RouteMiddleware`.
+
+### Group Features
 
 - **Prefix**: All routes in the group have the prefix prepended to their paths
 - **Named Routes**: Routes inside groups can have names for URL generation
 - **Middleware**: Apply middleware to all routes in the group at once
 - **Chaining**: Multiple middleware can be chained on a group
+- **Nesting**: Groups can be nested to any depth with inherited middleware
 
 ## Fallback Route
 
@@ -518,5 +565,6 @@ routes! {
 | Generate URL | `route("name", &[...])` | Generate URL from name |
 | Route middleware | `.middleware(M)` | Apply middleware to route |
 | Route group | `group!("/prefix", { ... })` | Group routes with shared prefix |
+| Nested groups | `group!(..., { group!(...) })` | Nest groups with inherited middleware |
 | Group middleware | `.middleware(M)` | Apply middleware to all group routes |
 | Fallback route | `fallback!(handler)` | Custom handler when no routes match |
