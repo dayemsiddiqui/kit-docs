@@ -39,7 +39,8 @@
               "core/bootstrap",
               "core/responses",
               "core/error-handling",
-              "core/middleware"
+              "core/middleware",
+              "core/testing"
             ]
           },
           {

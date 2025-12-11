@@ -1,0 +1,258 @@
+---
+title: Testing
+description: Write tests for your Kit application with database support
+---
+
+Kit provides testing utilities that make it easy to write tests for your actions, services, and controllers with full database support using in-memory SQLite.
+
+## Quick Start
+
+The simplest way to write a test with database support:
+
+```rust
+use kit::kit_test;
+use kit::testing::TestDatabase;
+
+#[kit_test]
+async fn test_user_creation(db: TestDatabase) {
+    let action = CreateUserAction::new();
+    let user = action.execute("test@example.com").await.unwrap();
+
+    assert!(user.id > 0);
+}
+```
+
+## Testing Approaches
+
+Kit provides two ways to write database-enabled tests:
+
+### 1. Attribute Macro (Recommended)
+
+The `#[kit_test]` attribute macro is the cleanest way to write tests:
+
+```rust
+use kit::kit_test;
+use kit::testing::TestDatabase;
+
+#[kit_test]
+async fn test_create_todo(db: TestDatabase) {
+    // db is an in-memory SQLite database with all migrations applied
+    let action = CreateTodoAction::new();
+    let todo = action.execute("Buy groceries").await.unwrap();
+
+    // Query directly using db.conn()
+    let found = todos::Entity::find_by_id(todo.id)
+        .one(db.conn())
+        .await
+        .unwrap();
+
+    assert!(found.is_some());
+    assert_eq!(found.unwrap().title, "Buy groceries");
+}
+```
+
+### 2. Helper Macro
+
+For more control, use the `test_database!` macro:
+
+```rust
+use kit::test_database;
+
+#[tokio::test]
+async fn test_todo_list() {
+    let db = test_database!();
+
+    // Create some test data
+    let action = CreateTodoAction::new();
+    action.execute("Task 1").await.unwrap();
+    action.execute("Task 2").await.unwrap();
+
+    // Test the list action
+    let list_action = ListTodosAction::new();
+    let todos = list_action.execute().await.unwrap();
+
+    assert_eq!(todos.len(), 2);
+}
+```
+
+## How It Works
+
+When you use `#[kit_test]` or `test_database!`:
+
+1. **Fresh Database**: A new in-memory SQLite database is created for each test
+2. **Migrations Applied**: Your `crate::migrations::Migrator` runs automatically
+3. **Automatic Integration**: The test database is registered in the DI container, so any code using `DB::connection()` or `#[inject] db: Database` automatically uses the test database
+4. **Complete Isolation**: Each test is fully isolated - no data leaks between tests
+
+## Testing Actions
+
+Actions that use dependency injection work seamlessly:
+
+```rust
+// Your action
+#[injectable]
+pub struct CreateUserAction {
+    #[inject]
+    db: Database,
+}
+
+impl CreateUserAction {
+    pub async fn execute(&self, email: &str) -> Result<users::Model, FrameworkError> {
+        let user = users::ActiveModel {
+            email: Set(email.to_string()),
+            ..Default::default()
+        };
+        users::Entity::insert_one(user).await
+    }
+}
+
+// Your test
+#[kit_test]
+async fn test_create_user(db: TestDatabase) {
+    // CreateUserAction automatically receives the test database
+    let action = CreateUserAction::new();
+    let user = action.execute("test@example.com").await.unwrap();
+
+    // Verify in database
+    let count = users::Entity::find()
+        .count(db.conn())
+        .await
+        .unwrap();
+    assert_eq!(count, 1);
+}
+```
+
+## Custom Migrator
+
+By default, both macros use `crate::migrations::Migrator`. If your migrator is in a different location:
+
+```rust
+// With attribute macro
+#[kit_test(migrator = my_crate::CustomMigrator)]
+async fn test_with_custom_migrator(db: TestDatabase) {
+    // ...
+}
+
+// With helper macro
+#[tokio::test]
+async fn test_with_custom_migrator() {
+    let db = test_database!(my_crate::CustomMigrator);
+    // ...
+}
+```
+
+## Direct Database Access
+
+The `TestDatabase` struct provides methods for direct database queries:
+
+```rust
+#[kit_test]
+async fn test_database_queries(db: TestDatabase) {
+    // Use db.conn() for SeaORM queries
+    let users = users::Entity::find()
+        .all(db.conn())
+        .await
+        .unwrap();
+
+    // Or use db.db() to get the DbConnection
+    let conn = db.db();
+}
+```
+
+## Test Without Database Parameter
+
+If you don't need direct database access in your test but still want the database set up:
+
+```rust
+#[kit_test]
+async fn test_action_indirectly() {
+    // Database is set up, but we don't need direct access
+    // Actions using DB::connection() still work
+    let action = MyAction::new();
+    let result = action.execute().await.unwrap();
+    assert!(result.success);
+}
+```
+
+## Best Practices
+
+### 1. One Assertion Per Test
+
+Keep tests focused on a single behavior:
+
+```rust
+#[kit_test]
+async fn test_user_email_is_stored(db: TestDatabase) {
+    let action = CreateUserAction::new();
+    let user = action.execute("test@example.com").await.unwrap();
+
+    assert_eq!(user.email, "test@example.com");
+}
+
+#[kit_test]
+async fn test_user_gets_default_role(db: TestDatabase) {
+    let action = CreateUserAction::new();
+    let user = action.execute("test@example.com").await.unwrap();
+
+    assert_eq!(user.role, "user");
+}
+```
+
+### 2. Test Edge Cases
+
+```rust
+#[kit_test]
+async fn test_create_user_with_duplicate_email(db: TestDatabase) {
+    let action = CreateUserAction::new();
+
+    // First user succeeds
+    action.execute("test@example.com").await.unwrap();
+
+    // Second user with same email should fail
+    let result = action.execute("test@example.com").await;
+    assert!(result.is_err());
+}
+```
+
+### 3. Use Factories for Test Data
+
+Create helper functions to generate test data:
+
+```rust
+async fn create_test_user(db: &TestDatabase, email: &str) -> users::Model {
+    let user = users::ActiveModel {
+        email: Set(email.to_string()),
+        ..Default::default()
+    };
+    user.insert(db.conn()).await.unwrap()
+}
+
+#[kit_test]
+async fn test_delete_user(db: TestDatabase) {
+    let user = create_test_user(&db, "test@example.com").await;
+
+    let action = DeleteUserAction::new();
+    action.execute(user.id).await.unwrap();
+
+    let found = users::Entity::find_by_id(user.id)
+        .one(db.conn())
+        .await
+        .unwrap();
+    assert!(found.is_none());
+}
+```
+
+## Running Tests
+
+Run your tests using cargo:
+
+```bash
+# Run all tests
+cargo test
+
+# Run a specific test
+cargo test test_user_creation
+
+# Run tests with output
+cargo test -- --nocapture
+```
