@@ -263,9 +263,9 @@ FormRequests can also generate TypeScript types, enabling end-to-end type safety
 Add `#[derive(InertiaProps)]` to your FormRequest structs:
 
 ```rust
-use kit::{form_request, InertiaProps};
+use kit::{request, InertiaProps};
 
-#[form_request]
+#[request]
 #[derive(InertiaProps)]
 pub struct CreateUserRequest {
     #[validate(email(message = "Invalid email"))]
