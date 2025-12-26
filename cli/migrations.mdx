@@ -189,6 +189,7 @@ kit db:sync [options]
 | Option | Description |
 |--------|-------------|
 | `--skip-migrations` | Skip running migrations before sync |
+| `--regenerate-models` | Regenerate model files (overwrites existing custom models with new fluent API) |
 
 ### Examples
 
@@ -198,7 +199,14 @@ kit db:sync
 
 # Only sync entities (skip migrations)
 kit db:sync --skip-migrations
+
+# Regenerate all model files with the latest fluent API
+kit db:sync --regenerate-models
 ```
+
+<Warning>
+The `--regenerate-models` flag will overwrite your custom model files in `src/models/`. Use with caution if you've added custom methods.
+</Warning>
 
 ### What It Does
 

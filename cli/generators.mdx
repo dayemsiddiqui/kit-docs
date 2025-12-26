@@ -200,8 +200,12 @@ kit make:task BackupDatabase
 ```rust
 // src/tasks/cleanup_logs_task.rs
 use async_trait::async_trait;
-use kit::{CronExpression, FrameworkError, ScheduledTask};
+use kit::{Task, TaskResult};
 
+/// CleanupLogsTask - A scheduled task
+///
+/// Implement your task logic in the `handle()` method.
+/// Register this task in `src/schedule.rs` with the fluent API.
 pub struct CleanupLogsTask;
 
 impl CleanupLogsTask {
@@ -211,17 +215,10 @@ impl CleanupLogsTask {
 }
 
 #[async_trait]
-impl ScheduledTask for CleanupLogsTask {
-    fn name(&self) -> &str {
-        "cleanup_logs_task"
-    }
-
-    fn schedule(&self) -> CronExpression {
-        CronExpression::daily()
-    }
-
-    async fn handle(&self) -> Result<(), FrameworkError> {
+impl Task for CleanupLogsTask {
+    async fn handle(&self) -> TaskResult {
         // TODO: Implement your task logic here
+        println!("Running CleanupLogsTask...");
         Ok(())
     }
 }
@@ -229,7 +226,7 @@ impl ScheduledTask for CleanupLogsTask {
 
 ### What It Does
 
-1. Creates `src/tasks/<name>.rs` with `ScheduledTask` trait implementation
+1. Creates `src/tasks/<name>.rs` with `Task` trait implementation
 2. Creates or updates `src/tasks/mod.rs` to export the task
 3. Creates `src/schedule.rs` for registering tasks (if not exists)
 4. Creates `src/bin/schedule.rs` scheduler binary (if not exists)
@@ -239,10 +236,16 @@ impl ScheduledTask for CleanupLogsTask {
 After generating, register your task in `src/schedule.rs`:
 
 ```rust
-use crate::tasks;
+use crate::tasks::cleanup_logs_task;
 
 pub fn register(schedule: &mut Schedule) {
-    schedule.task(tasks::CleanupLogsTask::new());
+    schedule.add(
+        schedule.task(cleanup_logs_task::CleanupLogsTask::new())
+            .daily()
+            .at("03:00")
+            .name("cleanup_logs_task")
+            .description("TODO: Add task description")
+    );
 }
 ```
 
