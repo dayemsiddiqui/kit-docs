@@ -40,6 +40,9 @@
               "core/responses",
               "core/error-handling",
               "core/middleware",
+              "core/authentication",
+              "core/sessions",
+              "core/csrf",
               "core/cache",
               "core/scheduling",
               "core/testing"

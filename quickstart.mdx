@@ -29,13 +29,33 @@ kit new todo-app
 
 The ineractive shell will ask some project specific questions like Project Name, Author etc. Answer all the questions and then the cli will generate the project files for you
 
-### Step 3: Start the web server
+### Step 3: Run migrations
 
-Now that you have the project setup you need to go to the project directory and then run kit serve command:
+Before starting the server, run the database migrations to set up the users and sessions tables:
 
 ```bash Terminal
 cd todo-app
+kit migrate
+```
+
+### Step 4: Start the web server
+
+Now start the web server using the kit serve command:
+
+```bash Terminal
 kit serve
 ```
 
-This will start the web server and in the terminal you will see the URL on which your web server is running. Go to the url and you will find your app up and running!!
+This will start the web server and in the terminal you will see the URL on which your web server is running. Go to the url and you will find your app up and running!
+
+## What's Included
+
+Your new Kit project comes with batteries included:
+
+- **Authentication** - Login, registration, and logout endpoints with session-based auth
+- **Protected routes** - Dashboard page that requires authentication
+- **CSRF protection** - Automatic protection against cross-site request forgery
+- **Database migrations** - Users and sessions tables ready to go
+- **React/Inertia frontend** - Pre-configured with TypeScript and Tailwind CSS
+
+Visit `/login` to see the login page, or `/register` to create a new account.
