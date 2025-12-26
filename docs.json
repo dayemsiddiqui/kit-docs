@@ -40,9 +40,18 @@
               "core/responses",
               "core/error-handling",
               "core/middleware",
-              "core/authentication",
-              "core/sessions",
-              "core/csrf",
+              {
+                "page": "core/authentication",
+                "icon": "lock"
+              },
+              {
+                "page": "core/sessions",
+                "icon": "cookie"
+              },
+              {
+                "page": "core/csrf",
+                "icon": "shield-check"
+              },
               "core/cache",
               "core/scheduling",
               "core/testing"
