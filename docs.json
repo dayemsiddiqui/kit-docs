@@ -84,7 +84,8 @@
             "pages": [
               "deployment/overview",
               "deployment/railway",
-              "deployment/digital-ocean"
+              "deployment/digital-ocean",
+              "deployment/hetzner"
             ]
           }
         ]

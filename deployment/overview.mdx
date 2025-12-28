@@ -145,9 +145,44 @@ Both services use the same image and environment variables.
 
 ## Health Checks
 
-Your Kit application responds to health checks at the root path or a dedicated endpoint. Configure your platform's health check to:
+Kit includes a built-in `/health` endpoint that returns JSON status information:
 
-- **Path**: `/` or your custom health endpoint
+```bash
+curl http://localhost:8080/health
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-12-28T10:30:00Z"
+}
+```
+
+### Database Health Check
+
+Add `?db=true` to verify database connectivity:
+
+```bash
+curl http://localhost:8080/health?db=true
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-12-28T10:30:00Z",
+  "database": "connected"
+}
+```
+
+### Platform Configuration
+
+Configure your platform's health check to:
+
+- **Path**: `/health`
 - **Port**: 8080 (or `SERVER_PORT`)
 - **Protocol**: HTTP
 
@@ -166,5 +201,8 @@ Run only **one** scheduler instance to avoid duplicate task execution. Most plat
 
 ## Next Steps
 
-- [Deploy to Railway](/deployment/railway)
-- [Deploy to Digital Ocean](/deployment/digital-ocean)
+Choose your deployment platform:
+
+- [Deploy to Railway](/deployment/railway) - Simple PaaS with automatic builds
+- [Deploy to Digital Ocean](/deployment/digital-ocean) - App Platform with managed infrastructure
+- [Deploy to Hetzner VPS](/deployment/hetzner) - Full control with systemd and Caddy
