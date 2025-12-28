@@ -145,10 +145,10 @@ Both services use the same image and environment variables.
 
 ## Health Checks
 
-Kit includes a built-in `/health` endpoint that returns JSON status information:
+Kit includes a built-in `/_kit/health` endpoint that returns JSON status information. The `/_kit` prefix ensures it never conflicts with your application routes.
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8080/_kit/health
 ```
 
 Response:
@@ -165,7 +165,7 @@ Response:
 Add `?db=true` to verify database connectivity:
 
 ```bash
-curl http://localhost:8080/health?db=true
+curl http://localhost:8080/_kit/health?db=true
 ```
 
 Response:
@@ -182,7 +182,7 @@ Response:
 
 Configure your platform's health check to:
 
-- **Path**: `/health`
+- **Path**: `/_kit/health`
 - **Port**: 8080 (or `SERVER_PORT`)
 - **Protocol**: HTTP
 

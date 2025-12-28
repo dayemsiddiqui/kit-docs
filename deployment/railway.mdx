@@ -102,7 +102,7 @@ For more control, add a `railway.json` to your project:
   },
   "deploy": {
     "startCommand": "./app",
-    "healthcheckPath": "/",
+    "healthcheckPath": "/_kit/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10

@@ -268,7 +268,7 @@ Caddy will automatically obtain and renew SSL certificates.
 
 ## Health Checks
 
-Kit includes a built-in `/health` endpoint that returns:
+Kit includes a built-in `/_kit/health` endpoint that returns:
 
 ```json
 {
@@ -282,7 +282,7 @@ Kit includes a built-in `/health` endpoint that returns:
 Add `?db=true` to also verify database connectivity:
 
 ```bash
-curl https://myapp.com/health?db=true
+curl https://myapp.com/_kit/health?db=true
 ```
 
 Returns:
@@ -299,7 +299,7 @@ Returns:
 
 Use the health endpoint with monitoring services:
 
-- **UptimeRobot**: Add HTTP monitor for `https://myapp.com/health`
+- **UptimeRobot**: Add HTTP monitor for `https://myapp.com/_kit/health`
 - **Better Uptime**: Configure health check endpoint
 - **Grafana**: Scrape health endpoint metrics
 
@@ -343,7 +343,7 @@ ssh $SERVER << 'EOF'
 
     # Verify health
     sleep 2
-    curl -f http://localhost:8080/health || exit 1
+    curl -f http://localhost:8080/_kit/health || exit 1
 
     echo "Deployment complete!"
 EOF
@@ -468,8 +468,8 @@ sudo -u app psql $DATABASE_URL -c "SELECT 1"
 systemctl status myapp
 
 # Test health endpoint directly
-curl http://localhost:8080/health
+curl http://localhost:8080/_kit/health
 
 # Check with database
-curl http://localhost:8080/health?db=true
+curl http://localhost:8080/_kit/health?db=true
 ```
