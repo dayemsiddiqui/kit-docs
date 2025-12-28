@@ -78,6 +78,14 @@
               "cli/migrations",
               "cli/docker"
             ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/overview",
+              "deployment/railway",
+              "deployment/digital-ocean"
+            ]
           }
         ]
       }

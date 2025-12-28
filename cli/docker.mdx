@@ -191,52 +191,55 @@ Mailpit captures all outgoing emails from your application. Access the web UI to
 
 ---
 
+## Unified Binary Commands
+
+Your Kit application builds to a single binary with multiple commands:
+
+```bash
+./app                    # Run web server with auto-migrate (default)
+./app serve              # Run web server with auto-migrate
+./app serve --no-migrate # Run web server without migrations
+./app migrate            # Run pending migrations
+./app schedule:work      # Run scheduler daemon
+```
+
+When running in Docker:
+
+```bash
+# Default - runs web server with auto-migrations
+docker run myapp
+
+# Run scheduler
+docker run myapp ./app schedule:work
+
+# Run migrations only
+docker run myapp ./app migrate
+```
+
+---
+
 ## Production Deployment
 
-For production deployment, combine both commands:
+For production deployment:
 
-1. **Generate Docker files**
+1. **Generate Dockerfile**
    ```bash
    kit docker:init
-   kit docker:compose
    ```
 
-2. **Create production environment file**
-   ```bash
-   cp .env .env.production
-   # Edit .env.production with production values
-   ```
-
-3. **Build and run**
+2. **Build the image**
    ```bash
    docker build -t my-app .
+   ```
+
+3. **Run**
+   ```bash
    docker run -d -p 8080:8080 --env-file .env.production my-app
    ```
 
-### Docker Compose for Production
-
-For production with Docker Compose, you might want to add your application service. Create a `docker-compose.prod.yml`:
-
-```yaml
-services:
-  app:
-    build: .
-    ports:
-      - "8080:8080"
-    env_file:
-      - .env.production
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-```
-
-Run with:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
+<Tip>
+For detailed deployment guides, see [Deployment Overview](/deployment/overview), [Railway](/deployment/railway), or [Digital Ocean](/deployment/digital-ocean).
+</Tip>
 
 ---
 
